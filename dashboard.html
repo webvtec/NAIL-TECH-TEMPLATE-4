@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATM BEAUTY STYLES — Admin</title>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --navy:#050A1A; --navy2:#080F22; --navy3:#0D1530; --navy4:#12193A;
+  --violet:#7C3AED; --violet2:#6D28D9; --violet3:#5B21B6;
+  --violetglow:rgba(124,58,237,0.25);
+  --coral:#FF4D6D; --coral2:#E8365A; --coralglow:rgba(255,77,109,0.2);
+  --cyan:#00D4FF; --cyanglow:rgba(0,212,255,0.15);
+  --gold:#FFD166;
+  --white:#FFFFFF; --offwhite:#E8EAF0;
+  --dim:#8892B0; --dimmer:#4A5580;
+  --line:rgba(124,58,237,0.18); --linecyan:rgba(0,212,255,0.12);
+  --glassline:rgba(255,255,255,0.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--navy);color:var(--offwhite);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--navy);}::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.4);border-radius:4px;}
+
+/* ACCESS OVERLAY */
+#accessOverlay{position:fixed;inset:0;z-index:99999;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+.overlay-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:5px;text-transform:uppercase;background:linear-gradient(120deg,var(--cyan),var(--violet),var(--coral));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dot-pulse{display:flex;gap:8px;}
+.dot-pulse span{width:8px;height:8px;border-radius:50%;background:var(--violet);animation:dotpulse 1.2s ease-in-out infinite;display:inline-block;}
+.dot-pulse span:nth-child(2){animation-delay:.4s;}.dot-pulse span:nth-child(3){animation-delay:.8s;}
+@keyframes dotpulse{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(8,15,34,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:200;}
+.topbar::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--violet),var(--coral),var(--cyan),var(--violet));background-size:300% 100%;animation:gradShift 6s linear infinite;}
+@keyframes gradShift{0%{background-position:0% 0;}100%{background-position:300% 0;}}
+.topbar-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:4px;text-transform:uppercase;background:linear-gradient(120deg,var(--cyan),var(--violet),var(--coral));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.topbar-badge{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:rgba(124,58,237,.15);border:1px solid var(--line);color:var(--violet);padding:4px 10px;border-radius:20px;}
+.topbar-signout{display:flex;align-items:center;gap:6px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.3);color:var(--coral);padding:7px 14px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+.topbar-signout:hover{background:rgba(255,77,109,.18);}
+
+/* NAV TABS */
+.tab-nav{display:flex;gap:6px;padding:14px 18px 0;overflow-x:auto;scrollbar-width:none;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tab-btn{flex-shrink:0;display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px 10px 0 0;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;letter-spacing:.5px;cursor:pointer;border:1px solid var(--glassline);border-bottom:none;background:var(--navy2);color:var(--dim);transition:all .25s;}
+.tab-btn:hover{color:var(--offwhite);background:var(--navy3);}
+.tab-btn.active{background:var(--navy3);color:var(--violet);border-color:var(--line);border-bottom:1px solid var(--navy3);}
+
+/* CONTENT */
+.page-wrap{padding-top:56px;}
+.content-section{display:none;}
+.content-section.active{display:block;animation:fadeInUp .4s cubic-bezier(.22,1,.36,1);}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.tab-body{background:var(--navy3);border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;margin:0 18px 24px;padding:24px 20px;position:relative;overflow:hidden;}
+.tab-body::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--violet),var(--coral),var(--cyan));}
+.section-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--white);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.section-title span{color:var(--violet);}
+
+/* FORM ELEMENTS */
+.field-label{display:block;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:7px;font-family:'Syne',sans-serif;}
+.field-input,.field-select{width:100%;padding:12px 14px;background:var(--navy2);border:1px solid var(--glassline);border-radius:10px;color:var(--offwhite);font-family:'Outfit',sans-serif;font-size:14px;transition:border-color .25s,box-shadow .25s;appearance:none;-webkit-appearance:none;margin-bottom:14px;}
+.field-input:focus,.field-select:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px var(--violetglow);}
+.field-input::placeholder{color:var(--dimmer);}
+.field-select option{background:var(--navy2);color:var(--offwhite);}
+
+/* BUTTONS */
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--violet2));color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;transition:all .25s;box-shadow:0 4px 18px var(--violetglow);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 26px var(--violetglow);}
+.btn-danger{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;background:rgba(255,77,109,.1);color:var(--coral);border:1px solid rgba(255,77,109,.3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+.btn-danger:hover{background:rgba(255,77,109,.2);}
+.btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;background:transparent;color:var(--dim);border:1px solid var(--glassline);font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+.btn-ghost:hover{color:var(--offwhite);border-color:var(--dim);}
+.btn-cyan{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.25);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+.btn-cyan:hover{background:var(--cyanglow);}
+.btn-gold{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;background:rgba(255,209,102,.08);color:var(--gold);border:1px solid rgba(255,209,102,.2);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+.btn-gold:hover{background:rgba(255,209,102,.15);}
+
+/* UPLOAD AREA */
+.upload-area{border:2px dashed rgba(124,58,237,.3);border-radius:14px;padding:32px 24px;text-align:center;margin-bottom:16px;cursor:pointer;background:rgba(124,58,237,.04);transition:all .3s;position:relative;}
+.upload-area:hover{background:rgba(124,58,237,.1);border-color:var(--violet);box-shadow:0 0 24px var(--violetglow);}
+.upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;margin:0;}
+.upload-icon{font-size:38px;margin-bottom:8px;}
+.upload-area p{margin:0;font-size:14px;color:var(--dim);}
+.upload-area strong{color:var(--violet);}
+#imagePreview{max-width:200px;max-height:200px;border-radius:12px;margin:10px auto;display:none;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+#uploadProgress{display:none;margin-bottom:12px;}
+#uploadProgress progress{width:100%;height:6px;border-radius:3px;accent-color:var(--violet);}
+
+/* GALLERY ADMIN */
+.gallery-category{margin-top:32px;}
+.gallery-cat-heading{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--violet);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.gallery-cat-heading::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);}
+.gallery-grid-admin{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px;}
+@media(min-width:600px){.gallery-grid-admin{grid-template-columns:repeat(3,1fr);}}
+.gallery-grid-admin>div{position:relative;}
+.gallery-grid-admin img{width:100%;height:200px;object-fit:cover;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.4);border:1px solid var(--glassline);transition:border-color .2s;}
+.gallery-grid-admin img:hover{border-color:var(--violet);}
+.remove-img-btn{position:absolute;top:7px;right:7px;background:rgba(200,50,50,.85);color:white;border:none;padding:5px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;backdrop-filter:blur(4px);transition:background .2s;}
+.remove-img-btn:hover{background:#c0392b;}
+.drag-hint{position:absolute;top:7px;left:7px;background:rgba(0,0,0,.55);color:var(--cyan);border-radius:6px;padding:3px 8px;font-size:10px;pointer-events:none;backdrop-filter:blur(4px);}
+.gallery-item-cat-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(124,58,237,0.95),rgba(124,58,237,0.7));color:#fff;padding:8px 10px;font-size:10px;font-weight:700;text-align:center;letter-spacing:1.5px;text-transform:uppercase;font-family:'Syne',sans-serif;}
+
+/* RESERVATION CARDS */
+.res-group-label{margin:28px 0 10px;padding:10px 16px;background:var(--navy2);color:var(--cyan);border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:3px;text-transform:uppercase;border:1px solid var(--linecyan);text-align:center;}
+.reservation-card{background:var(--navy2);border-radius:14px;padding:16px;margin:10px 0;border:1px solid var(--glassline);border-left:3px solid var(--violet);transition:all .3s;}
+.reservation-card:hover{box-shadow:0 4px 20px var(--violetglow);}
+.reservation-card.cancelled{opacity:.65;border-left-color:var(--coral);}
+.res-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.res-name{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:var(--offwhite);}
+.badge{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+.badge-today{background:rgba(124,58,237,.2);color:var(--violet);border:1px solid var(--line);}
+.badge-tomorrow{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.25);}
+.badge-upcoming{background:rgba(255,209,102,.12);color:var(--gold);border:1px solid rgba(255,209,102,.2);}
+.badge-past{background:rgba(255,255,255,.05);color:var(--dimmer);border:1px solid var(--glassline);}
+.badge-cancelled{background:rgba(255,77,109,.12);color:var(--coral);border:1px solid rgba(255,77,109,.25);}
+.res-detail{font-size:13px;color:var(--dim);margin:3px 0;}
+.res-detail strong{color:var(--offwhite);}
+.res-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.highlighted{border:2px solid var(--gold)!important;box-shadow:0 0 20px rgba(255,209,102,.3)!important;}
+
+/* SEARCH */
+.search-row{display:flex;gap:10px;margin-bottom:16px;}
+.search-row .field-input{margin-bottom:0;flex:1;}
+
+/* UNAVAILABLE LIST */
+.unavail-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--navy2);border-radius:10px;border-left:3px solid var(--coral);margin-bottom:10px;font-size:13px;color:var(--offwhite);}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(5,10,26,.85);display:none;justify-content:center;align-items:center;z-index:9000;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--navy3);border-radius:20px;width:100%;max-width:380px;padding:26px 22px;text-align:center;border:1px solid var(--line);box-shadow:0 30px 80px rgba(124,58,237,.2);position:relative;overflow:hidden;}
+.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--violet),var(--coral),var(--cyan));}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--white);margin-bottom:14px;letter-spacing:1px;}
+.modal-sub{font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.6;}
+.modal-radio-group{text-align:left;margin-bottom:18px;}
+.modal-radio-group label{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:var(--navy2);border:1px solid var(--glassline);font-size:13px;color:var(--offwhite);cursor:pointer;transition:all .2s;margin-bottom:8px;}
+.modal-radio-group label:hover{border-color:var(--violet);background:rgba(124,58,237,.08);}
+.modal-radio-group input[type="radio"]{accent-color:var(--violet);width:16px;height:16px;}
+.modal-actions{display:flex;gap:10px;justify-content:center;}
+.modal-actions button{flex:1;}
+.modal-wide{max-width:480px;text-align:left;max-height:82vh;overflow-y:auto;}
+
+/* TOAST */
+#toast{visibility:hidden;min-width:240px;margin-left:-120px;background:var(--violet);color:#fff;text-align:center;border-radius:40px;padding:13px 22px;position:fixed;z-index:9999;left:50%;bottom:30px;font-size:13px;font-weight:600;letter-spacing:.5px;box-shadow:0 6px 24px var(--violetglow);opacity:0;transition:opacity .5s,bottom .5s;font-family:'Outfit',sans-serif;}
+
+/* CLEAR ROW */
+.clear-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.clear-row .field-input{flex:1;min-width:180px;margin-bottom:0;}
+
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.5);}
+.status-completed{color:#4ade80;font-weight:700;}
+.status-not{color:var(--coral);font-weight:700;}
+.status-none{color:var(--dimmer);font-style:italic;}
+</style>
+</head>
+<body>
+
+<!-- ACCESS OVERLAY -->
+<div id="accessOverlay">
+  <div class="overlay-brand">ATM Beauty</div>
+  <div class="dot-pulse"><span></span><span></span><span></span></div>
+  <div id="accessStatus" style="font-size:13px;color:var(--dimmer);letter-spacing:1.5px;font-family:'Outfit',sans-serif;">Verifying identity...</div>
+</div>
+
+<div id="dashboardContent" style="display:none;">
+
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="topbar-brand">ATM Beauty</div>
+      <span class="topbar-badge">Admin</span>
+    </div>
+    <button class="topbar-signout" onclick="signOut()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </header>
+
+  <div class="page-wrap">
+
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tabGallery" onclick="showSection('gallerySection')">✦ Gallery</button>
+      <button class="tab-btn" id="tabReservations" onclick="showSection('reservationsSection')">📋 Reservations</button>
+      <button class="tab-btn" id="tabUnavailable" onclick="showSection('unavailableSection')">🚫 Unavailable Days</button>
+    </div>
+
+    <!-- GALLERY -->
+    <div id="gallerySection" class="content-section active">
+      <div class="tab-body">
+        <div class="section-title"><span>✦</span> Gallery Management</div>
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="photoFileInput" accept="image/*" onchange="previewImage(event)"/>
+          <div class="upload-icon">✦</div>
+          <p><strong>Tap to choose a photo</strong><br>or drag and drop here</p>
+        </div>
+        <img id="imagePreview" alt="Preview"/>
+        <div id="uploadProgress">
+          <p style="font-size:12px;color:var(--dim);margin-bottom:6px;">Uploading...</p>
+          <progress id="progressBar" value="0" max="100"></progress>
+        </div>
+        <div class="field-label">Category</div>
+        <select id="photoCategorySelect" class="field-select">
+          <option value="BRAIDS">BRAIDS</option>
+          <option value="TWISTS">TWISTS</option>
+          <option value="LOCS">LOCS</option>
+          <option value="CORNROWS">CORNROWS</option>
+          <option value="WEAVES">WEAVES</option>
+          <option value="QUICK WEAVE">QUICK WEAVE</option>
+          <option value="PONYTAILS">PONYTAILS</option>
+          <option value="NATURAL HAIR">NATURAL HAIR</option>
+          <option value="OTHER">OTHER</option>
+        </select>
+        <button class="btn-primary" onclick="uploadPhoto()" id="uploadBtn">Add Photo ✦</button>
+        <div id="adminGallery"></div>
+      </div>
+    </div>
+
+    <!-- RESERVATIONS -->
+    <div id="reservationsSection" class="content-section">
+      <div class="tab-body">
+        <div class="section-title"><span>📋</span> Reservations</div>
+        <div class="search-row">
+          <input id="reservationSearch" placeholder="Search by name, phone, booking #..." type="text" class="field-input"/>
+          <button class="btn-primary" onclick="searchReservations()">Search</button>
+        </div>
+        <div id="reservationsList"></div>
+        <div class="clear-row">
+          <input id="clearInput" placeholder='Type "CONFIRM" to clear past reservations' type="text" class="field-input"/>
+          <button class="btn-danger" onclick="clearReservations()">Clear Past</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNAVAILABLE DAYS -->
+    <div id="unavailableSection" class="content-section">
+      <div class="tab-body">
+        <div class="section-title"><span>🚫</span> Unavailable Days</div>
+        <div class="field-label">Date</div>
+        <input id="unavailableDateInput" type="date" class="field-input"/>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--offwhite);margin-bottom:14px;cursor:pointer;">
+          <input checked id="allDayCheckbox" onchange="toggleTimeInputs()" type="checkbox" style="width:16px;height:16px;accent-color:var(--violet);flex-shrink:0;"/> All Day
+        </label>
+        <div id="timeInputs" style="display:none;">
+          <div class="field-label">From</div>
+          <input id="startTimeInput" type="time" class="field-input"/>
+          <div class="field-label">Until</div>
+          <input id="endTimeInput" type="time" class="field-input"/>
+        </div>
+        <button class="btn-primary" onclick="addUnavailableDate()">Add Unavailable Date</button>
+        <div style="margin-top:28px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--coral);margin-bottom:14px;">Unavailable Dates</div>
+          <ul id="unavailableDatesList" style="list-style:none;padding:0;"></ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFLICT MODAL -->
+<div id="conflictModal" class="modal-overlay">
+  <div class="modal-box modal-wide">
+    <div class="modal-title" style="color:var(--gold);">⚠ Conflicting Bookings</div>
+    <p class="modal-sub">These bookings conflict. Please <strong style="color:var(--coral);">contact the client</strong> and <strong style="color:var(--coral);">cancel the booking</strong> before proceeding.</p>
+    <div id="conflictList"></div>
+    <div style="text-align:right;margin-top:14px;"><button class="btn-ghost" onclick="closeConflictModal()">Close</button></div>
+  </div>
+</div>
+
+<!-- DEPOSIT MODAL -->
+<div id="depositModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Update Payment</div>
+    <div class="modal-radio-group">
+      <label><input type="radio" name="depositChoice" value="Made"/> 💵 Payment Made</label>
+      <label><input type="radio" name="depositChoice" value="No"/> ❌ No Payment Made</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeDepositModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmDeposit()">Confirm ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS MODAL -->
+<div id="statusModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Update Status</div>
+    <div class="modal-radio-group">
+      <label><input type="radio" name="statusChoice" value="Completed"/> ✅ Completed</label>
+      <label><input type="radio" name="statusChoice" value="Not Completed"/> ❌ Not Completed</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeStatusModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmStatus()">Confirm ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL MODAL -->
+<div id="adminCancelModal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="font-size:36px;margin-bottom:10px;">⚠️</div>
+    <div class="modal-title" style="color:var(--coral);">Cancel Booking?</div>
+    <input type="hidden" id="adminCancelBookingId"/>
+    <p class="modal-sub">This marks the booking as <strong style="color:var(--coral);">Cancelled</strong>. The client will remain visible with cancelled status.</p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAdminCancelModal()">Keep</button>
+      <button class="btn-danger" onclick="confirmAdminCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyACn_79JVzIv-208QqXqAyUlFDR9yqpamQ",
+  authDomain: "nailtech-fc7b4.firebaseapp.com",
+  projectId: "nailtech-fc7b4",
+  storageBucket: "nailtech-fc7b4.firebasestorage.app",
+  messagingSenderId: "1091208214654",
+  appId: "1:1091208214654:web:99ec5c82dde52dfe20c02f"
+};
+  
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore(),storage=firebase.storage();
+const ADMIN_UID="Vj3a2XPtWTamBVFi86OP1oZJMi63";
+
+// AUTH GUARD
+firebase.auth().onAuthStateChanged(user=>{
+  const overlay=document.getElementById('accessOverlay'),status=document.getElementById('accessStatus'),content=document.getElementById('dashboardContent');
+  if(!user){status.textContent='Access denied — redirecting...';status.style.color='var(--coral)';setTimeout(()=>{window.location.href='index.html';},1200);return;}
+  if(user.uid!==ADMIN_UID){status.textContent='Unauthorised — signing out...';status.style.color='var(--coral)';firebase.auth().signOut().then(()=>setTimeout(()=>{window.location.href='index.html';},1200));return;}
+  status.textContent='Access granted ✦';status.style.color='var(--cyan)';
+  setTimeout(()=>{overlay.style.transition='opacity .45s';overlay.style.opacity='0';setTimeout(()=>{overlay.style.display='none';content.style.display='block';},450);},600);
+  loadGallery();showSection('gallerySection');loadReservations();loadUnavailableDates();
+});
+
+function signOut(){firebase.auth().signOut().then(()=>{window.location.href='index.html';});}
+
+// TABS
+function showSection(id){
+  document.querySelectorAll('.content-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const map={gallerySection:'tabGallery',reservationsSection:'tabReservations',unavailableSection:'tabUnavailable'};
+  if(map[id])document.getElementById(map[id]).classList.add('active');
+  if(id==='reservationsSection')loadReservations();
+}
+
+// TOAST
+function showToast(msg,success=true){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.style.backgroundColor=success?'var(--violet)':'var(--coral)';
+  t.style.visibility='visible';t.style.opacity='1';t.style.bottom='50px';
+  setTimeout(()=>{t.style.opacity='0';t.style.bottom='30px';setTimeout(()=>t.style.visibility='hidden',500);},3000);
+}
+
+// GALLERY
+function previewImage(event){
+  const file=event.target.files[0];if(!file)return;
+  const preview=document.getElementById('imagePreview'),reader=new FileReader();
+  reader.onload=e=>{preview.src=e.target.result;preview.style.display='block';};
+  reader.readAsDataURL(file);
+  document.getElementById('uploadArea').querySelector('p').innerHTML=`<strong>${file.name}</strong><br><span style="color:var(--dimmer);">Ready to upload</span>`;
+}
+
+function uploadPhoto(){
+  const fileInput=document.getElementById('photoFileInput'),category=document.getElementById('photoCategorySelect').value.trim(),file=fileInput.files[0];
+  if(!file){alert('Please select a photo first.');return;}
+  if(!category){alert('Please select a category.');return;}
+  const btn=document.getElementById('uploadBtn');btn.disabled=true;btn.textContent='Uploading...';
+  const progressDiv=document.getElementById('uploadProgress'),progressBar=document.getElementById('progressBar');
+  progressDiv.style.display='block';
+  const ext=file.name.split('.').pop();
+  const fileName=`gallery/${Date.now()}_${Math.random().toString(36).substring(2)}.${ext}`;
+  const uploadTask=storage.ref(fileName).put(file);
+  uploadTask.on('state_changed',
+    snap=>{progressBar.value=(snap.bytesTransferred/snap.totalBytes)*100;},
+    err=>{alert('Upload failed: '+err.message);btn.disabled=false;btn.textContent='Add Photo ✦';progressDiv.style.display='none';},
+    ()=>{uploadTask.snapshot.ref.getDownloadURL().then(url=>db.collection('gallery').add({url,category,sortOrder:Date.now(),uploadedAt:firebase.firestore.FieldValue.serverTimestamp()})).then(()=>{showToast('✅ Photo uploaded!');fileInput.value='';document.getElementById('imagePreview').style.display='none';progressDiv.style.display='none';progressBar.value=0;btn.disabled=false;btn.textContent='Add Photo ✦';document.getElementById('uploadArea').querySelector('p').innerHTML='<strong>Tap to choose a photo</strong><br>or drag and drop here';}).catch(err=>{alert('Error saving: '+err.message);btn.disabled=false;btn.textContent='Add Photo ✦';progressDiv.style.display='none';});}
+  );
+}
+
+function loadGallery(){
+  const container=document.getElementById('adminGallery');container.innerHTML='';
+  db.collection('gallery').orderBy('sortOrder','asc').onSnapshot(snap=>{
+    let docs=[];snap.forEach(doc=>docs.push({id:doc.id,...doc.data()}));
+    docs.sort((a,b)=>{if(a.sortOrder!==undefined&&b.sortOrder!==undefined)return a.sortOrder-b.sortOrder;if(a.sortOrder!==undefined)return -1;if(b.sortOrder!==undefined)return 1;return 0;});
+    container.innerHTML='';
+    if(!docs.length){container.innerHTML='<p style="text-align:center;color:var(--dimmer);padding:30px;">No photos yet.</p>';return;}
+    const cats={};docs.forEach(item=>{const c=item.category||'Uncategorized';if(!cats[c])cats[c]=[];cats[c].push(item);});
+    for(const cat in cats){
+      const safeId='ag-'+cat.replace(/\s+/g,'-').replace(/&/g,'and');
+      container.innerHTML+=`<div class="gallery-category"><div class="gallery-cat-heading">${cat}</div><div class="gallery-grid-admin" id="${safeId}"></div></div>`;
+      const grid=document.getElementById(safeId);
+      cats[cat].forEach(item=>{
+        const cell=document.createElement('div');cell.setAttribute('draggable','true');cell.dataset.docId=item.id;
+        cell.innerHTML=`<img src="${item.url}" alt="${cat}" loading="lazy"><div class="gallery-item-cat-label">${cat}</div><button class="remove-img-btn" onclick="removePhoto('${item.id}')">✕</button><div class="drag-hint">⠿ DRAG</div>`;
+        grid.appendChild(cell);
+      });
+      enableDragSort(grid);
+    }
+  });
+}
+
+function enableDragSort(grid){
+  let dragEl=null;
+  grid.addEventListener('dragstart',e=>{dragEl=e.target.closest('[draggable]');if(dragEl){dragEl.style.opacity='.4';e.dataTransfer.effectAllowed='move';}});
+  grid.addEventListener('dragend',e=>{
+    if(!dragEl)return;dragEl.style.opacity='';
+    const cells=[...grid.querySelectorAll('[draggable]')],batch=db.batch();
+    cells.forEach((c,i)=>{if(c.dataset.docId)batch.update(db.collection('gallery').doc(c.dataset.docId),{sortOrder:i});});
+    batch.commit().then(()=>showToast('✅ Order saved.')).catch(()=>showToast('❌ Save failed.',false));dragEl=null;
+  });
+  grid.addEventListener('dragover',e=>{
+    e.preventDefault();const target=e.target.closest('[draggable]');
+    if(target&&target!==dragEl&&target.parentElement===grid){const rect=target.getBoundingClientRect();if(e.clientX>rect.left+rect.width/2)grid.insertBefore(dragEl,target.nextSibling);else grid.insertBefore(dragEl,target);}
+  });
+}
+
+function removePhoto(docId){if(!confirm('Remove this photo?'))return;db.collection('gallery').doc(docId).delete().then(()=>showToast('🗑 Photo removed.')).catch(e=>alert('Error: '+e.message));}
+
+// RESERVATIONS
+function loadReservations(){
+  const container=document.getElementById('reservationsList');
+  db.collection('bookings').orderBy('date','asc').onSnapshot(snap=>{
+    container.innerHTML='';
+    if(snap.empty){container.innerHTML='<p style="color:var(--dimmer);text-align:center;padding:30px;">No reservations found.</p>';return;}
+    const now=new Date(),tY=now.getFullYear(),tM=now.getMonth(),tD=now.getDate();
+    const tomorrow=new Date(tY,tM,tD+1);
+    const todayList=[],tomorrowList=[],upcomingList=[],pastList=[];
+    snap.forEach(doc=>{
+      const b=doc.data();if(typeof b.date!=='string')return;
+      const[y,m,d]=b.date.split('-').map(Number),bDate=new Date(y,m-1,d);
+      const formattedDate=bDate.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+      const entry={id:doc.id,...b,formattedDate,timeSort:convertTimeToMinutes(b.time)};
+      if(bDate.getFullYear()===tY&&bDate.getMonth()===tM&&bDate.getDate()===tD)todayList.push(entry);
+      else if(bDate.getFullYear()===tomorrow.getFullYear()&&bDate.getMonth()===tomorrow.getMonth()&&bDate.getDate()===tomorrow.getDate())tomorrowList.push(entry);
+      else if(bDate>new Date(tY,tM,tD))upcomingList.push(entry);
+      else pastList.push(entry);
+    });
+    const sort=list=>list.sort((a,b)=>a.timeSort-b.timeSort);
+    sort(todayList);sort(tomorrowList);sort(upcomingList);sort(pastList);
+    function renderGroup(title,list,badgeClass){
+      if(!list.length)return;
+      container.innerHTML+=`<div class="res-group-label">${title}</div>`;
+      list.forEach(b=>{
+        const cancelled=b.status==='Cancelled',depOk=b.deposit==='Made'||b.deposit==='Yes';
+        container.innerHTML+=`<div class="reservation-card${cancelled?' cancelled':''}" data-id="${b.id}">
+          <div class="res-header"><div class="res-name">${b.name}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${cancelled?`<span class="badge badge-cancelled">Cancelled by ${b.cancelledBy==='client'?'Client':'Admin'}</span>`:`<span class="badge ${badgeClass}">${title}</span>`}</div></div>
+          <div class="res-detail"><strong>#${b.bookingNumber||'N/A'}</strong></div>
+          <div class="res-detail">📞 ${b.phone||'N/A'}</div>
+          <div class="res-detail">📅 ${b.formattedDate}</div>
+          <div class="res-detail">⏰ ${b.time||'N/A'}</div>
+          <div class="res-detail">✦ ${b.service||'N/A'}</div>
+          ${b.total?`<div class="res-detail" style="color:var(--coral);font-weight:700;">💰 $${Number(b.total).toLocaleString()}</div>`:''}
+          <div class="res-detail">💳 <span style="color:${depOk?'var(--cyan)':'var(--gold)'};font-weight:700;">${depOk?'Payment Made ✓':'Payment Pending ⚠️'}</span></div>
+          <div class="res-detail">Status: <span class="${b.status==='Completed'?'status-completed':b.status==='Cancelled'?'status-not':b.status==='Not Completed'?'status-not':'status-none'}">${b.status||'Not Set'}${cancelled?' — '+(b.cancelledBy==='client'?'Client':'Admin'):''}</span></div>
+          <div class="res-actions">
+            ${!cancelled?`<button class="btn-danger" onclick="cancelReservation('${b.id}')">✕ Cancel</button>`:`<button class="btn-ghost" disabled style="opacity:.4;cursor:not-allowed;">✕ Cancelled</button>`}
+            <button class="btn-cyan" onclick="updateDeposit('${b.id}')">💳 Payment</button>
+            ${title==='Today'&&!cancelled?`<button class="btn-gold" onclick="updateStatus('${b.id}')">Status</button>`:''}
+          </div>
+        </div>`;
+      });
+    }
+    renderGroup('Today',todayList,'badge-today');
+    renderGroup('Tomorrow',tomorrowList,'badge-tomorrow');
+    renderGroup('Upcoming',upcomingList,'badge-upcoming');
+    renderGroup('Past',pastList,'badge-past');
+  });
+}
+
+function convertTimeToMinutes(t){if(!t)return 0;const parts=t.trim().split(' ');if(parts.length!==2)return 0;const[time,period]=parts,[h,m]=time.split(':').map(Number);if(isNaN(h)||isNaN(m))return 0;let total=h*60+m;if(period.toUpperCase()==='PM'&&h!==12)total+=720;if(period.toUpperCase()==='AM'&&h===12)total-=720;return total;}
+
+function searchReservations(){
+  const q=document.getElementById('reservationSearch').value.toLowerCase();
+  document.querySelectorAll('.highlighted').forEach(el=>el.classList.remove('highlighted'));
+  if(!q)return;
+  for(let card of document.querySelectorAll('.reservation-card')){if(card.innerText.toLowerCase().includes(q)){card.classList.add('highlighted');card.scrollIntoView({behavior:'smooth',block:'center'});break;}}
+}
+
+function clearReservations(){
+  if(document.getElementById('clearInput').value.trim()!=='CONFIRM'){alert('Type "CONFIRM" to clear past reservations.');return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  db.collection('bookings').get().then(snap=>{
+    const batch=db.batch();
+    snap.forEach(doc=>{const b=doc.data();if(b.date&&typeof b.date==='string'){const[y,m,d]=b.date.split('-').map(Number),bd=new Date(y,m-1,d);bd.setHours(0,0,0,0);if(bd<today)batch.delete(doc.ref);}});
+    return batch.commit();
+  }).then(()=>{showToast('✅ Past reservations cleared.');document.getElementById('clearInput').value='';}).catch(e=>{console.error(e);alert('Failed: '+e.message);});
+}
+
+function cancelReservation(id){document.getElementById('adminCancelBookingId').value=id;document.getElementById('adminCancelModal').classList.add('open');}
+function confirmAdminCancel(){const id=document.getElementById('adminCancelBookingId').value;if(!id)return;db.collection('bookings').doc(id).update({status:'Cancelled',cancelledBy:'admin'}).then(()=>{closeAdminCancelModal();showToast('🗑 Booking cancelled.');}).catch(e=>{closeAdminCancelModal();alert('Failed: '+e.message);});}
+function closeAdminCancelModal(){document.getElementById('adminCancelModal').classList.remove('open');document.getElementById('adminCancelBookingId').value='';}
+
+let currentBookingId=null;
+function updateDeposit(id){currentBookingId=id;document.querySelectorAll('input[name="depositChoice"]').forEach(r=>r.checked=false);document.getElementById('depositModal').classList.add('open');}
+function confirmDeposit(){const choice=document.querySelector('input[name="depositChoice"]:checked');if(!choice){showToast('⚠️ Select an option.',false);return;}db.collection('bookings').doc(currentBookingId).update({deposit:choice.value}).then(()=>{closeDepositModal();showToast(`✅ Payment: ${choice.value}`);}).catch(()=>showToast('❌ Failed.',false));}
+function closeDepositModal(){document.getElementById('depositModal').classList.remove('open');currentBookingId=null;}
+
+let currentStatusId=null;
+function updateStatus(id){currentStatusId=id;document.querySelectorAll('input[name="statusChoice"]').forEach(r=>r.checked=false);document.getElementById('statusModal').classList.add('open');}
+function confirmStatus(){const choice=document.querySelector('input[name="statusChoice"]:checked');if(!choice){alert('Select an option.');return;}db.collection('bookings').doc(currentStatusId).update({status:choice.value}).then(()=>{closeStatusModal();loadReservations();showToast(`✅ Status: ${choice.value}`);}).catch(()=>alert('Failed.'));}
+function closeStatusModal(){document.getElementById('statusModal').classList.remove('open');currentStatusId=null;}
+
+// UNAVAILABLE DAYS
+function toggleTimeInputs(){document.getElementById('timeInputs').style.display=document.getElementById('allDayCheckbox').checked?'none':'block';}
+
+async function addUnavailableDate(){
+  const date=document.getElementById('unavailableDateInput').value,allDay=document.getElementById('allDayCheckbox').checked,startTime=document.getElementById('startTimeInput').value,endTime=document.getElementById('endTimeInput').value;
+  if(!date){alert('Please select a date.');return;}if(!allDay&&(!startTime||!endTime)){alert('Please provide both times.');return;}
+  const[yyyy,mm,dd]=date.split('-'),finalDate=`${yyyy}-${mm}-${dd}`;
+  try{
+    const snap=await db.collection('bookings').where('date','==',finalDate).get();
+    const conflicts=[];
+    if(!snap.empty)snap.forEach(doc=>{const b=doc.data(),bt=b.time||null;if(allDay){conflicts.push({id:doc.id,...b});}else if(bt){const bm=convertTimeToMinutes(bt),sm=convertTimeToMinutes(startTime),em=convertTimeToMinutes(endTime);if(bm>=sm&&bm<=em)conflicts.push({id:doc.id,...b});}});
+    if(conflicts.length){showConflictModal(conflicts);return;}
+    await db.collection('unavailableDays').add({date:finalDate,allDay,startTime:allDay?null:startTime,endTime:allDay?null:endTime,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('unavailableDateInput').value='';document.getElementById('startTimeInput').value='';document.getElementById('endTimeInput').value='';
+    document.getElementById('allDayCheckbox').checked=true;document.getElementById('timeInputs').style.display='none';
+    showToast('✅ Unavailable day added.');
+  }catch(e){console.error(e);alert('Failed: '+e.message);}
+}
+
+function loadUnavailableDates(){
+  const list=document.getElementById('unavailableDatesList');
+  db.collection('unavailableDays').orderBy('date').onSnapshot(snap=>{
+    list.innerHTML='';
+    snap.forEach(doc=>{
+      const d=doc.data();let fmt=d.date;
+      if(d.date&&d.date.includes('-')){const[y,m,dy]=d.date.split('-');fmt=new Date(y,m-1,dy).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});}
+      const text=`${fmt} — ${d.allDay?'All Day':`${d.startTime} to ${d.endTime}`}`;
+      list.innerHTML+=`<li><div class="unavail-item">${text}<button class="btn-danger" style="margin-left:12px;flex-shrink:0;" onclick="removeUnavailableDate('${doc.id}')">Remove</button></div></li>`;
+    });
+  });
+}
+
+function removeUnavailableDate(id){db.collection('unavailableDays').doc(id).delete();}
+
+function showConflictModal(conflicts){
+  const conflictList=document.getElementById('conflictList');conflictList.innerHTML='';
+  conflicts.forEach(b=>{conflictList.innerHTML+=`<div style="padding:14px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;background:var(--navy2);"><div style="font-size:13px;color:var(--offwhite);margin:3px 0;"><strong>${b.name||'N/A'}</strong></div><div style="font-size:13px;color:var(--dim);margin:3px 0;">📞 ${b.phone||'N/A'}</div><div style="font-size:13px;color:var(--dim);margin:3px 0;">✦ ${b.service||'N/A'}</div><div style="font-size:13px;color:var(--dim);margin:3px 0;">📅 ${b.date} · ⏰ ${b.time||'N/A'}</div><button class="btn-primary" style="margin-top:8px;" onclick="goToBooking('${b.id}')">Go to Reservation</button></div>`;});
+  document.getElementById('conflictModal').classList.add('open');
+}
+function closeConflictModal(){document.getElementById('conflictModal').classList.remove('open');}
+function goToBooking(id){closeConflictModal();showSection('reservationsSection');setTimeout(()=>{const target=document.querySelector(`[data-id="${id}"]`);if(target){document.querySelectorAll('.highlighted').forEach(e=>e.classList.remove('highlighted'));target.classList.add('highlighted');target.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>target.classList.remove('highlighted'),6000);}},500);}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+</script>
+</body>
+</html>
